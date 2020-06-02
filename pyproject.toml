@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "cosmicpython"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pydantic = "^1.5.1"
+
+[tool.poetry.dev-dependencies]
+black = "^19.10b0"
+flake8 = "^3.8.2"
+mypy = "^0.770"
+pytest = "^5.4.2"
+
+[build-system]
+requires = ["poetry>=1.0.5"]
+build-backend = "poetry.masonry.api"
