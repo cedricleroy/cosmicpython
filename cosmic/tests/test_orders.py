@@ -50,3 +50,20 @@ def test_allocate_order_line_wrong_sku(batch):
     msg = 'sku should match: expected BLUE-VASE, got WHITE-VASE'
     assert str(err.value) == msg
 
+
+def test_deallocate_order_line(batch):
+    order_line = OrderLine(sku='BLUE-VASE', quantity=2, orderid=1)
+    batch.allocate(order_line)
+    batch.deallocate(order_line)
+    assert batch.quantity == 20
+
+
+def test_deallocate_order_line_does_not_exist(batch):
+    order_line = OrderLine(sku='BLUE-VASE', quantity=2, orderid=1)
+    order_line2 = OrderLine(sku='WHITE-VASE', quantity=3, orderid=1)
+    batch.allocate(order_line)
+    with pytest.raises(BatchError) as err:
+        batch.deallocate(order_line2)
+    msg = 'Order line {} has is not allocated'.format(order_line2)
+    assert str(err.value) == msg
+

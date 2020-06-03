@@ -34,6 +34,13 @@ class Batch(BaseModel):
         if order_line.quantity > self.quantity:
             msg = 'Order line quantity cannot be > than batch quantity'
             raise BatchError(msg)
-        self.quantity -= order_line.quantity  # type: ignore
+        self.quantity -= order_line.quantity
         self.order_lines.add(order_line)
+
+    def deallocate(self, order_line: OrderLine):
+        if order_line not in self.order_lines:
+            msg = 'Order line {} has is not allocated'.format(order_line)
+            raise BatchError(msg)
+        self.quantity += order_line.quantity
+        self.order_lines.remove(order_line)
 
