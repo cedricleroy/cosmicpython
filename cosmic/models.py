@@ -24,7 +24,7 @@ class Batch(BaseModel):
     quantity: int = Field(int, ge=0)
     order_lines: Set[OrderLine] = set()
 
-    def allocate_order_line(self, order_line: OrderLine):
+    def allocate(self, order_line: OrderLine):
         if order_line in self.order_lines:
             return
         if order_line.sku != self.sku:
