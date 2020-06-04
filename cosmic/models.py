@@ -1,5 +1,6 @@
 """ Domain modeling exercise (aka Business Logic) """
-from typing import Set
+import datetime as dt
+from typing import Set, List, Optional
 
 from pydantic import BaseModel, Field
 from pydantic.dataclasses import dataclass
@@ -27,6 +28,7 @@ class Batch(BaseModel):
     sku: str
     quantity: int = Field(int, ge=0)
     order_lines: Set[OrderLine] = set()
+    eta: Optional[dt.date]
 
     def allocate(self, order_line: OrderLine) -> None:
         if order_line in self.order_lines:
@@ -48,7 +50,28 @@ class Batch(BaseModel):
         self.quantity += order_line.quantity
         self.order_lines.remove(order_line)
 
+    def __gt__(self, obj: "Batch") -> bool:
+        print(self, obj)
+        if self.eta is None:
+            return False
+        elif obj.eta is None:
+            return True
+        return self.eta > obj.eta
+
     # NOTE: This is an `entity` object - long-lived identity where some
     # of the data it holds can change. Comparison and hashability have
     # to be implemented with __eq__ and __hash__.
+
+
+def allocate(order_line: OrderLine, batches: List[Batch]) -> Optional[str]:
+    """ Allocate an order line to a list of batches
+
+    NOTE: Would like to see this in another module (services?)
+    """
+    sorted_batches = sorted(batches)
+    valid_batches = [b for b in sorted_batches if order_line.quantity <= b.quantity]
+    if valid_batches:
+        valid_batches[0].allocate(order_line)
+        return valid_batches[0].reference
+    return None
 

@@ -1,6 +1,8 @@
+import datetime as dt
+
 import pytest
 
-from cosmic.models import Batch, OrderLine, BatchError
+from cosmic.models import Batch, OrderLine, BatchError, allocate
 
 
 @pytest.fixture()
@@ -66,4 +68,91 @@ def test_deallocate_order_line_does_not_exist(batch):
         batch.deallocate(order_line2)
     msg = 'Order line {} has is not allocated'.format(order_line2)
     assert str(err.value) == msg
+
+
+def test_get_from_stock_when_possible():
+    # if we have a batch in stock, and another being shipped, let's
+    # prioritize the one in stock
+    tomorrow = dt.date.today() + dt.timedelta(days=1)
+    batch_in_stock = Batch(
+        reference='batch-in-stock-reference',
+        sku='BLUE-VASE',
+        quantity=20
+    )
+    batch_being_shipped = Batch(
+        reference='batch-being-shipped-reference',
+        sku='BLUE-VASE',
+        quantity=10,
+        eta=tomorrow
+    )
+    order_line = OrderLine(sku='BLUE-VASE', quantity=2, orderid=1)
+    allocate(order_line, [batch_being_shipped, batch_in_stock])
+    assert order_line in batch_in_stock.order_lines
+    assert batch_in_stock.quantity == 18
+
+
+def test_get_from_stock_with_smallest_eta():
+    tomorrow = dt.date.today() + dt.timedelta(days=1)
+    batch1 = Batch(
+        reference='batch1',
+        sku='BLUE-VASE',
+        quantity=10,
+        eta=tomorrow
+    )
+    batch2 = Batch(
+        reference='batch2',
+        sku='BLUE-VASE',
+        quantity=10,
+        eta=tomorrow + dt.timedelta(days=1)
+    )
+    order_line = OrderLine(sku='BLUE-VASE', quantity=2, orderid=1)
+    allocate(order_line, [batch2, batch1])
+    assert batch1.quantity == 8
+    assert batch2.quantity == 10
+
+
+def test_get_from_stock_ignore_batch_with_bad_qty():
+    # when the batch are sorted by eta, we should also
+    # ignore those where the quantity does not match the
+    # order line
+    tomorrow = dt.date.today() + dt.timedelta(days=1)
+    batch1 = Batch(
+        reference='batch1',
+        sku='BLUE-VASE',
+        quantity=10,
+        eta=tomorrow
+    )
+    batch2 = Batch(
+        reference='batch2',
+        sku='BLUE-VASE',
+        quantity=20,
+        eta=tomorrow + dt.timedelta(days=1)
+    )
+    order_line = OrderLine(sku='BLUE-VASE', quantity=12, orderid=1)
+    allocate(order_line, [batch1, batch2])
+    assert batch1.quantity == 10
+    assert batch2.quantity == 8
+
+
+def test_get_from_stock_return_allocated_reference():
+    batch = Batch(
+        reference='batch1',
+        sku='BLUE-VASE',
+        quantity=10
+    )
+    order_line = OrderLine(sku='BLUE-VASE', quantity=2, orderid=1)
+    res = allocate(order_line, [batch])
+    assert res == batch.reference
+
+
+def test_get_from_stock_no_allocation():
+    batch = Batch(
+        reference='batch1',
+        sku='BLUE-VASE',
+        quantity=10
+    )
+    order_line = OrderLine(sku='BLUE-VASE', quantity=12, orderid=1)
+    res = allocate(order_line, [batch])
+    assert batch.quantity == 10
+    assert res is None
 
