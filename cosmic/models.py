@@ -30,22 +30,25 @@ class Batch(BaseModel):
     order_lines: Set[OrderLine] = set()
     eta: Optional[dt.date]
 
+    class Config:
+        orm_mode = True
+
     def allocate(self, order_line: OrderLine) -> None:
         if order_line in self.order_lines:
             return
         if order_line.sku != self.sku:
-            msg = 'sku should match: expected {}, got {}'
+            msg = "sku should match: expected {}, got {}"
             msg = msg.format(self.sku, order_line.sku)
             raise ValueError(msg)
         if order_line.quantity > self.quantity:
-            msg = 'Order line quantity cannot be > than batch quantity'
+            msg = "Order line quantity cannot be > than batch quantity"
             raise BatchError(msg)
         self.quantity -= order_line.quantity
         self.order_lines.add(order_line)
 
     def deallocate(self, order_line: OrderLine) -> None:
         if order_line not in self.order_lines:
-            msg = 'Order line {} has is not allocated'.format(order_line)
+            msg = "Order line {} has is not allocated".format(order_line)
             raise BatchError(msg)
         self.quantity += order_line.quantity
         self.order_lines.remove(order_line)
@@ -74,4 +77,3 @@ def allocate(order_line: OrderLine, batches: List[Batch]) -> Optional[str]:
         valid_batches[0].allocate(order_line)
         return valid_batches[0].reference
     return None
-
