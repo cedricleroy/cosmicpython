@@ -1,24 +1,26 @@
-import abc
-from typing import List
+from typing import List, Protocol
+
+from sqlalchemy.orm.session import Session
 
 from cosmic import models, db
 
 
-class AbstractRepository(abc.ABC):
-    @abc.abstractmethod
-    def add(self, batch: models.Batch):
-        raise NotImplementedError
+class BatchRepository(Protocol):
+    def add(self, batch: models.Batch) -> None:
+        ...
 
-    @abc.abstractmethod
     def get(self, reference: str) -> models.Batch:
-        raise NotImplementedError
+        ...
+
+    def list(self) -> List[models.Batch]:
+        ...
 
 
-class SqlAlchemyRepository(AbstractRepository):
-    def __init__(self, session):
+class SqlAlchemyRepository:
+    def __init__(self, session: Session) -> None:
         self.session = session
 
-    def add(self, batch: models.Batch):
+    def add(self, batch: models.Batch) -> None:
         self.session.add(db.Batch(**batch.dict()))
 
     def get(self, reference: str) -> models.Batch:
