@@ -2,7 +2,7 @@ import datetime as dt
 
 import pytest
 
-from cosmic.models import Batch, OrderLine, BatchError, allocate
+from cosmic.models import Batch, OrderLine, BatchError, OutOfStock, allocate
 
 
 @pytest.fixture()
@@ -128,6 +128,8 @@ def test_get_from_stock_return_allocated_reference():
 def test_get_from_stock_no_allocation():
     batch = Batch(reference="batch1", sku="BLUE-VASE", quantity=10)
     order_line = OrderLine(sku="BLUE-VASE", quantity=12, orderid=1)
-    res = allocate(order_line, [batch])
+    with pytest.raises(OutOfStock) as err:
+        allocate(order_line, [batch])
+    msg = f"Out of stock for sku {order_line.sku}"
+    assert str(err.value) == msg
     assert batch.quantity == 10
-    assert res is None

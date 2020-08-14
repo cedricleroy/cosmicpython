@@ -3,18 +3,15 @@ import datetime as dt
 from typing import Set, List, Optional
 
 from pydantic import BaseModel, Field
-from pydantic.dataclasses import dataclass
 
 
-@dataclass(frozen=True)
 class OrderLine(BaseModel):
     sku: str
     quantity: int = Field(int, ge=0)
     orderid: int = Field(int, ge=0)
 
-    # NOTE: Using a dataclass here to get a hash automatically
-    # https://docs.python.org/3/library/dataclasses.html#dataclasses.dataclass
-    # We could also reimplement __eq__ and __hash__ ourselves.
+    def __hash__(self) -> int:
+        return hash((type(self),) + tuple(self.__dict__.values()))
 
     # NOTE: This is a `value` object, identified by the data it holds.
 
@@ -66,7 +63,11 @@ class Batch(BaseModel):
     # to be implemented with __eq__ and __hash__.
 
 
-def allocate(order_line: OrderLine, batches: List[Batch]) -> Optional[str]:
+class OutOfStock(Exception):
+    pass
+
+
+def allocate(order_line: OrderLine, batches: List[Batch]) -> str:
     """ Allocate an order line to a list of batches
 
     NOTE: Would like to see this in another module (services?)
@@ -76,4 +77,4 @@ def allocate(order_line: OrderLine, batches: List[Batch]) -> Optional[str]:
     if valid_batches:
         valid_batches[0].allocate(order_line)
         return valid_batches[0].reference
-    return None
+    raise OutOfStock(f"Out of stock for sku {order_line.sku}")
