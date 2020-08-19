@@ -25,9 +25,8 @@ class FakeRepository:
 
 
 def test_returns_allocation():
-    line = models.OrderLine("o1", "COMPLICATED-LAMP", 10)
-    batch = models.Batch("b1", "COMPLICATED-LAMP", 100, eta=None)
+    line = models.OrderLine(sku="COMPLICATED-LAMP", quantity=10, orderid=1)
+    batch = models.Batch(reference="b1", sku="COMPLICATED-LAMP", quantity=100, eta=None)
     repo = FakeRepository([batch])
-
     result = services.allocate(line, repo, FakeSession())
     assert result == "b1"
