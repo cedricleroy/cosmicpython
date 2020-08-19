@@ -51,16 +51,17 @@ class Batch(BaseModel):
         self.order_lines.remove(order_line)
 
     def __gt__(self, obj: "Batch") -> bool:
-        print(self, obj)
         if self.eta is None:
             return False
         elif obj.eta is None:
             return True
         return self.eta > obj.eta
 
+    def __hash__(self) -> int:
+        return hash((type(self), self.reference, self.quantity, self.eta))
+
     # NOTE: This is an `entity` object - long-lived identity where some
-    # of the data it holds can change. Comparison and hashability have
-    # to be implemented with __eq__ and __hash__.
+    # of the data it holds can change.
 
 
 class OutOfStock(Exception):
